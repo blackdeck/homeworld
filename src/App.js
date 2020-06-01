@@ -216,12 +216,15 @@ class App extends Component {
         const building_subcomponent = (item, key) =>
             <div className="flex-element flex-container-row panel filament" key={key}>
                 <div className="flex-element flex-container-row slim">
+                    <div className="flex-element slim">
+                        {state.transport.position === key ? <div style={{ width: "40px", height: "100%", backgroundColor: "#ff0000" }} /> : ""}
+                    </div>
                     <div className="flex-element slim"><h3 className="slim">{state.buildings[key].level}</h3></div>
                     <div className="flex-element slim"><h5>{item.name}</h5></div>
                 </div>
                 <div className="flex-element flex-container-col slim">
                     <div className="flex-element flex-container-row slim">
-                        <div className="flex-element"><CollectGinButton item={item} item_key={key} key={key} state={state} gin={this.gin} /></div>
+                        {/*<div className="flex-element"><CollectGinButton item={item} item_key={key} key={key} state={state} gin={this.gin} /></div>*/}
                         <div className="flex-element">Cycle: {state.buildings[key].fullness}/{calcCycle(state, key)}</div>
                     </div>
                     <div className="flex-element">Profit: {(_.values(item.profit)[0] * Math.pow(1.01, state.permanent.reputation)).toFixed(2)} x {state.buildings[key].level} x {state.buildings[key].modifier} = {_.values(calcProfit(state, key))[0]} {item.type} or {(_.values(calcProfit(state, key))[0] / calcCycle(state, key) * 10).toFixed(1)}/sec </div>

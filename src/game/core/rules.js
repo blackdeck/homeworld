@@ -10,6 +10,7 @@ import {events, genEvent} from '../knowledge/events';
 import {managers, generateManager} from '../knowledge/managers';
 
 import {shuffleObject} from '../helpers';
+import {transport} from "../knowledge/transport";
 
 
 export const rules = {
@@ -85,6 +86,55 @@ export const rules = {
         
         onTick: (store, params = {}) => {
             
+            return store;
+        }
+    },
+
+    transport: {
+        onFrame: (store, params = {}) => {
+            let viable_buildings = 0;
+            if (store.transport.work > 0) {
+                store.transport.work--;
+                return store;
+            }
+            if (store.transport.task === "idle") {
+                _.each(_.pickBy(store.buildings, (item) => item !== 'empty'), (building, key) => {
+                    if (building.level > 0 && store.buildings[key].fullness >= calcCycle(store, key)) {
+                        viable_buildings++;
+                    }
+                });
+                if (viable_buildings > 0) store.transport.task = "forward";
+            }
+            if (store.transport.task === "forward") {
+                if (store.transport.position < store.buildings.length - 1) {
+                    store.transport.position++;
+                    store.transport.work += transport.move_speed;
+                } else {
+                    store.transport.task = "collecting";
+                }
+            }
+            if (store.transport.task === "collecting") {
+                let building = store.buildings[store.transport.position];
+                if (building && building !== "empty") {
+                    if (building.level > 0 && building.fullness >= calcCycle(store, store.transport.position)) {
+                        store = collectItem(store, store.transport.position);
+                        store.transport.work += transport.collect_speed;
+                        store.transport.task = "returning";
+                    } else {
+                        store = transport.moveBackwards(store);
+                    }
+                } else {
+                    store = transport.moveBackwards(store);
+                }
+            }
+            if (store.transport.task === "returning") {
+                store = transport.moveBackwards(store);
+            }
+            return store;
+        },
+
+        onTick: (store, params = {}) => {
+
             return store;
         }
     },
