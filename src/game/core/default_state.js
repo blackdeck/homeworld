@@ -51,6 +51,12 @@ export const default_state = {
     automated_buildings: [],
     
     rewards: [],
+
+    transport: {
+        work: 0,
+        task: "idle",
+        position: -1
+    },
     
     
     
