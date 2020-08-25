@@ -4,6 +4,7 @@ import _ from 'lodash';
 import {isEnough, gainCost} from '../../bdcgin/Gin';
 import {checkStorageVolume} from './storage';
 import {giveReward} from '../helpers';
+import {resources} from "./resources";
 
 export const calcBuildCost = (store, item_key) => {
     // console.log(item_key, store.buildings, store.buildings[item_key]);
@@ -30,7 +31,7 @@ export const calcBuildDuration = (store, item_key) => {
 export const calcBuildPercent = (store, item_key) => {
     let task = _.find(store.constructing, {item_key: item_key});
     
-    return ((store.frame - task.start_frame) * 100 / task.duration ).toFixed(0);
+    return Math.round((store.frame - task.start_frame) * 100 / task.duration );
     
 };
 
@@ -39,7 +40,7 @@ export const calcProfit = (store, item_key) => {
     return _.mapValues(store.buildings[item_key].profit, (base_profit) => {
     
         let profit = base_profit * Math.pow(1.01, store.permanent.reputation);
-        return (profit * store.buildings[item_key].level * store.buildings[item_key].modifier).toFixed(2);
+        return Math.round(profit * store.buildings[item_key].level * store.buildings[item_key].modifier * 100) / 100;
     });
 };
 
@@ -58,6 +59,29 @@ export const collectItem = (store, item_key) => {
     return store;
 };
 
+export const produceItem = (store, item_key) => {
+    store.buildings[item_key].fullness = 0;
+
+    let cost = calcProfit(store, item_key);
+
+    _.each(cost, (value, key) => {
+        store.buildings[item_key].buffer[key] += value;
+
+        //костыль
+        if (_.isNaN(store.buildings[item_key].buffer[key])) store.buildings[item_key].buffer[key] = 0;
+    });
+
+    return store;
+};
+
+export const collectProduced = (store, item_key) => {
+    store = gainCost(store, checkStorageVolume(store, store.buildings[item_key].buffer));
+
+    store.buildings[item_key].buffer = {};
+
+    return store;
+};
+
 export const buildItem = (store, item_key) => {
     
     store.buildings[item_key].busy = true;
@@ -69,7 +93,7 @@ export const buildItem = (store, item_key) => {
 
 export const buildNewItem = (store, item_key) => {
     
-    store.buildings[store.show_build_menu] = _.assign(buildings[item_key], {level: 0, busy: false, auto_build: true, fullness: 0, modifier: 1, speed_modifier: 1});
+    store.buildings[store.show_build_menu] = _.assign(buildings[item_key], {level: 0, busy: false, auto_build: true, fullness: 0, modifier: 1, speed_modifier: 1, buffer: {}});
     
     store.show_build_menu = false;
     
