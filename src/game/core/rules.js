@@ -4,8 +4,16 @@ import _ from 'lodash';
 
 import {isEnough, gainCost} from '../../bdcgin/Gin';
 
-import {storage, calcStorageCapacity} from '../knowledge/storage';
-import {buildings, finishItem, collectItem, calcBuildCost, buildItem, calcCycle} from '../knowledge/buildings';
+import {storage, calcStorageCapacity, checkStorageVolume} from '../knowledge/storage';
+import {
+    buildings,
+    finishItem,
+    collectItem,
+    calcBuildCost,
+    buildItem,
+    calcCycle,
+    produceItem, collectProduced
+} from '../knowledge/buildings';
 import {events, genEvent} from '../knowledge/events';
 import {managers, generateManager} from '../knowledge/managers';
 
@@ -38,6 +46,10 @@ export const rules = {
                     store = collectItem(store, key);
                 }
                 */
+
+                if (store.buildings[key].fullness >= calcCycle(store, key)) {
+                    store = produceItem(store, key);
+                }
             });
             return store;
         },
@@ -92,6 +104,7 @@ export const rules = {
 
     transport: {
         onFrame: (store, params = {}) => {
+            //console.log(store);
             let viable_buildings = 0;
             if (store.transport.work > 0) {
                 store.transport.work--;
@@ -99,7 +112,7 @@ export const rules = {
             }
             if (store.transport.task === "idle") {
                 _.each(_.pickBy(store.buildings, (item) => item !== 'empty'), (building, key) => {
-                    if (building.level > 0 && store.buildings[key].fullness >= calcCycle(store, key)) {
+                    if (building.level > 0 && _.sum(_.values(building.buffer)) > 0) {
                         viable_buildings++;
                     }
                 });
@@ -116,8 +129,8 @@ export const rules = {
             if (store.transport.task === "collecting") {
                 let building = store.buildings[store.transport.position];
                 if (building && building !== "empty") {
-                    if (building.level > 0 && building.fullness >= calcCycle(store, store.transport.position)) {
-                        store = collectItem(store, store.transport.position);
+                    if (building.level > 0 && _.sum(_.values(building.buffer)) > 0) {
+                        store = collectProduced(store, store.transport.position);
                         store.transport.work += transport.collect_speed;
                         store.transport.task = "returning";
                     } else {
